@@ -1,13 +1,16 @@
+"""
+Mengimport module yang akan digunakan dalam program
+"""
 import select
 import socket
 import sys
 import signal
-import _pickle as cPickle
+import _pickle as cPickle 
 import struct
 import argparse
 
-SERVER_HOST = 'localhost'
-CHAT_SERVER_NAME = 'server'
+SERVER_HOST = 'localhost' # mendefenisikan host dengan 'localhost'
+CHAT_SERVER_NAME = 'server' # nama untuk server yang akan dilempar sebaga argumen
 
 def send(channel, *args):
     buffer = cPickle.dumps(args)
@@ -28,6 +31,9 @@ def receive(channel):
         buf = channel.recv(size-len(buf))
     return cPickle.loads(buf)[0]
 
+"""
+class server yang akan digunakan untuk mendefenisikan fungsi fungsi yang digunakan dalam server
+"""
 class ChatServer(object):
     def __init__(self, port, backlog=5):
         self.clients = 0
@@ -100,6 +106,9 @@ class ChatServer(object):
                         self.outputs.remove(sock)
         self.server.close()
 
+"""
+Mendefenisikan class Chat Client untuk client dalam aplikasi
+"""
 class ChatClient(object):
     def __init__(self, name, port, host=SERVER_HOST):
         self.name = name
