@@ -66,94 +66,94 @@ class ChatServer(object):
                 readable, writeable, exceptional = \
                 select.select(inputs, self.outputs,[])
             except select.error:    #handling exception
-                break   
-            for sock in readable:   
-                if sock == self.server:
-                    client, address = self.server.accept()
-                    print("Chat server: got connection %d from %s" %(client.fileno(), address))
-                    cname = receive(client).split('NAME: ')[1]
-                    self.clients += 1
-                    send(client, 'CLIENT: ' + str(address[0]))
-                    inputs.append(client)
-                    self.clientmap[client] = (address,cname)
+                break   #menghentikan perulangan
+            for sock in readable:   #melakukan perulangan pada list readable
+                if sock == self.server:     #mengecek apakah sock == server
+                    client, address = self.server.accept()  #server menerima koneksi dan mengassign nilainya ke client dan address
+                    print("Chat server: got connection %d from %s" %(client.fileno(), address)) #menampilkan pesan saat server menerima koneksi
+                    cname = receive(client).split('NAME: ')[1]  #assign nilai cname dengan menerima return dari method receive
+                    self.clients += 1   #menambah nilai pada self.clients dengan 1
+                    send(client, 'CLIENT: ' + str(address[0]))  #menjaankan method send
+                    inputs.append(client)   #menambahkan client pada list inputs
+                    self.clientmap[client] = (address,cname)    #assign nilai self.clientmap[client] dengan 
                     msg = "\n(Connected: New client (%d) from %s)" %\
-                    (self.clients, self.get_client_name(client))
-                    for output in self.outputs:
-                        send(output,msg)
-                    self.outputs.append(client)
-                elif sock == sys.stdin:
-                    junk = sys.stdin.readline()
-                    running = False
-                else:
-                    try:
-                        data = receive(sock)
-                        if data:
-                            msg = '\n#[' + self.get_client_name(sock) + ']>>' + data
-                            for output in self.outputs:
-                                if output != sock:
-                                    send(output, msg)
-                        else:
-                            print("Chat server: %d hung up" % sock.fileno())
-                            self.clients -= 1
-                            sock.close()
-                            inputs.remove(sock)
-                            self.outputs.remove(sock)
-                            msg = "\n(Now hung up: Client from %s)" %self.get_client_name(sock)
-                            for output in self.outputs:
-                                send(output, msg)
-                    except socket.error:
-                        inputs.remove(sock)
-                        self.outputs.remove(sock)
-        self.server.close()
+                    (self.clients, self.get_client_name(client))    #assign  nilai msg
+                    for output in self.outputs:     #looping pada list output
+                        send(output,msg)        #memanggil method send 
+                    self.outputs.append(client) #menambahkan isi list outputs dengan client
+                elif sock == sys.stdin:         #jika sock = sys.stdin
+                    junk = sys.stdin.readline() #membuat variabel junk
+                    running = False             #reassign variabel running dengan false
+                else:                           #saat kondisi if tidak ada yang terpenuhi
+                    try:       #membuka blok try untuk scanning exeption                 
+                        data = receive(sock) #assign nilai data dengan method receive   
+                        if data:    #mengecekek jika data tidak kosong
+                            msg = '\n#[' + self.get_client_name(sock) + ']>>' + data    #assign nilai dari variabel msg
+                            for output in self.outputs: #looping terhadap list outpusts
+                                if output != sock:  #mengecek jika output = sock
+                                    send(output, msg)   #memanggil method send()
+                        else:   #bila data ksoong
+                            print("Chat server: %d hung up" % sock.fileno()) #menampilkan pessan
+                            self.clients -= 1   #mengurangi jumlah clients
+                            sock.close()    #menutup sock
+                            inputs.remove(sock) #menghapus sock dari inputs
+                            self.outputs.remove(sock)   #menghapus sock dari outputs
+                            msg = "\n(Now hung up: Client from %s)" %self.get_client_name(sock) #assign nilai msg
+                            for output in self.outputs: #looping pada outputs
+                                send(output, msg)   #memanggil method send
+                    except socket.error:    #menagkap error socket.error
+                        inputs.remove(sock)     #menghapus sock dari list inputs
+                        self.outputs.remove(sock)   #menghapus sock dari outputs
+        self.server.close() #menutup server
 
 """
 Mendefenisikan class Chat Client untuk client dalam aplikasi
 """
 class ChatClient(object):
-    def __init__(self, name, port, host=SERVER_HOST):
+    def __init__(self, name, port, host=SERVER_HOST):   #constructor dari class Chat client
         self.name = name
         self.connected = False
         self.host = host
         self.port = port
-        self.prompt='[' + '@'.join((name, socket.gethostname().split('.')[0])) + ']> '
-        try:
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.connect((host, self.port))
-            print("Now connected to chat server@ port %d" % self.port)
-            self.connected = True
-            send(self.sock, 'NAME: '+self.name)
-            data = receive(self.sock)
-            addr = data.split('CLIENT: ')[1]
-            self.prompt = '[' + '@'.join((self.name, addr)) + ']> '
-        except socket.error:
+        self.prompt='[' + '@'.join((name, socket.gethostname().split('.')[0])) + ']> '  #assign nilai dari prompt
+        try:    #scanning error
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   #membuat socket dengan parameter ipv4 dan tcp
+            self.sock.connect((host, self.port))    #melakukan koneksi ke host pada port tertentu
+            print("Now connected to chat server@ port %d" % self.port)  #menampilkan pesan saat telah konek ke server
+            self.connected = True   #assign connected dengan true
+            send(self.sock, 'NAME: '+self.name) #memanggil method send
+            data = receive(self.sock)   #assign nilai data dengan return value dari receive(self.sock)
+            addr = data.split('CLIENT: ')[1]    #assign nilai addr dari data
+            self.prompt = '[' + '@'.join((self.name, addr)) + ']> ' #assgin prompt
+        except socket.error:    #menangkap socket.error
             print("Failed to connect to chat server @ port %d" % self.
-port)
-            sys.exit(1)
+port)   #menampilakan pesan saat gagal terhubung ke server
+            sys.exit(1) #keluar dari program
 
-    def run(self):
-        while self.connected:
-            try:
-                sys.stdout.write(self.prompt)
-                sys.stdout.flush()
-                readable, writeable, exceptional = select.select([0,self.sock], [], [])
-                for sock in readable:
-                    if sock == 0:
-                        data = sys.stdin.readline().strip()
-                        if data: send(self.sock, data)
-                    elif sock == self.sock:
-                        data = receive(self.sock)
-                        if not data:
-                            print('Client shutting down.')
-                            self.connected = False
+    def run(self):      #method run untuk menjalankan class ChatClient
+        while self.connected:   #looping saat client connect ke server
+            try:    #scanning error
+                sys.stdout.write(self.prompt)   #digunakan dalam menampilkan pesan
+                sys.stdout.flush()  #membersihkan internal buffer pada file
+                readable, writeable, exceptional = select.select([0,self.sock], [], []) #assign nilai readable, writable, exceptional dengan select.select()
+                for sock in readable:   #looping pada list readable
+                    if sock == 0:   #jika sock = 0
+                        data = sys.stdin.readline().strip() #menghapus trailing character pada awal dan akhir 
+                        if data: send(self.sock, data)  #jika data ada maka memanggil method send
+                    elif sock == self.sock: #jika sock = self.sock
+                        data = receive(self.sock)   #assign nilai data dengan return value dari recevive
+                        if not data:    #jika data kosong
+                            print('Client shutting down.')  #menampilkan pesan shutting down
+                            self.connected = False  #reassign connected dengan False
                             break
                         else:
-                            sys.stdout.write(data + '\n')
-                            sys.stdout.flush()
+                            sys.stdout.write(data + '\n')   #writing pada sys.stdout
+                            sys.stdout.flush()  ##membersihkan internal buffer pada file
             
-            except KeyboardInterrupt:
-                print(" Client interrupted. ")
-                self.sock.close()
-                break
+            except KeyboardInterrupt:   #menangkap exception saat terjadi interupsi dari keyboar
+                print(" Client interrupted. ")  #menampilkan pesan interupsi
+                self.sock.close()   #menutup self.sock
+                break   #menghentikan looping
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Socket Server Example with Select')   #membuat objek ArgumentParser
