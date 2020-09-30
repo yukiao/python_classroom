@@ -13,21 +13,21 @@ SERVER_HOST = 'localhost' # mendefenisikan host dengan 'localhost'
 CHAT_SERVER_NAME = 'server' # nama untuk server yang akan dilempar sebaga argumen
 
 def send(channel, *args):
-    buffer = cPickle.dumps(args)
-    value = socket.htonl(len(buffer))
-    size = struct.pack("L",value)
-    channel.send(size)
-    channel.send(buffer)
+    buffer = cPickle.dumps(args)        #mendefenisikan buffer yang menyimpan hasil serialisasi dari args
+    value = socket.htonl(len(buffer))   #melakukan konvert 32 bit dari host byte ke network byte
+    size = struct.pack("L", value)      #mengembalika objek byte
+    channel.send(size)                  #mengirim data size ke socket yang lain
+    channel.send(buffer)                #mengirim data buffer ke socket yang lain
 
 def receive(channel):
-    size = struct.calcsize("L")
-    size = channel.recv(size)
+    size = struct.calcsize("L")         #mengembalikan ukuran dari struct
+    size = channel.recv(size)           #mengembalikab data yang diterima sebagai objek byte
     try:
         size = socket.ntohl(struct.unpack("L", size)[0])
-    except struct.error :
+    except struct.error:
         return ''
     buf = ""
-    while len(buf)<size:
+    while len(buf) < size:
         buf = channel.recv(size-len(buf))
     return cPickle.loads(buf)[0]
 
@@ -162,9 +162,9 @@ if __name__ == "__main__":
     given_args = parser.parse_args()
     port = given_args.port
     name = given_args.name
-    if name == CHAT_SERVER_NAME:
-        server = ChatServer(port)
-        server.run()
+    if name == CHAT_SERVER_NAME:    #mengecek apakah name = CHAT_SERVER_NAME
+        server = ChatServer(port)   #membuat objek ChatServer dengan argumen port
+        server.run()    #memanggil function run dari objek server
     else:
-        client = ChatClient(name=name, port=port)
-        client.run()
+        client = ChatClient(name=name, port=port)   #membuat objek ChatClient
+        client.run()    #memanggil function run dari objek client
